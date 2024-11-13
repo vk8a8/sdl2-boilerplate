@@ -35,13 +35,12 @@ public:
     Game();
     ~Game();
     void start();
-    void stop();
     void draw();
     void fillRect(SDL_Rect* rc, int r, int g, int b);
     void fpsChanged(int fps);
     void onQuit();
-    void onKeyDown(SDL_Event* event);
-    void onKeyUp(SDL_Event* event);
+    void onKeyDown(const SDL_Event& event);
+    void onKeyUp(const SDL_Event& event);
     void run();
     void update();
 private:
@@ -53,12 +52,21 @@ private:
     Sprite m_hero;
 };
 
-Game::Game()
-:m_frameSkip(0), m_running(false), m_window(NULL), m_renderer(NULL) {
+Game::Game() {
+    m_frameSkip = 0;
+    m_running = false;
 }
 
 Game::~Game() {
-    stop();
+    if (nullptr != m_renderer) {
+        SDL_DestroyRenderer(m_renderer);
+        m_renderer = nullptr;
+    }
+    if (nullptr != m_window) {
+        SDL_DestroyWindow(m_window);
+        m_window = nullptr;
+    }
+    SDL_Quit();
 }
 
 void Game::start() {
@@ -90,17 +98,7 @@ void Game::draw() {
     SDL_RenderPresent(m_renderer);
 }
 
-void Game::stop() {
-    if (NULL != m_renderer) {
-        SDL_DestroyRenderer(m_renderer);
-        m_renderer = NULL;
-    }
-    if (NULL != m_window) {
-        SDL_DestroyWindow(m_window);
-        m_window = NULL;
-    }
-    SDL_Quit();
-}
+
 
 void Game::fillRect(SDL_Rect* rc, int r, int g, int b) {
     SDL_SetRenderDrawColor(m_renderer, r, g, b, SDL_ALPHA_OPAQUE);
@@ -108,13 +106,9 @@ void Game::fillRect(SDL_Rect* rc, int r, int g, int b) {
 }
 
 void Game::fpsChanged(int fps) {
-    char szFps[ 128 ];
-    sprintf(szFps, "%s: %d FPS", "SDL2 Base C++ - Use Arrow Keys to Move", fps);
+    char szFps[64];
+    sprintf(szFps, "SDL2 Base C++ - Use Arrow Keys to Move: %d FPS", fps);
     SDL_SetWindowTitle(m_window, szFps);
-}
-
-void Game::onQuit() {
-    m_running = false;
 }
 
 void Game::run() {
@@ -126,9 +120,15 @@ void Game::run() {
         int timeElapsed = 0;
         if (SDL_PollEvent(&event)) {
             switch (event.type) {
-                case SDL_QUIT:    onQuit();            break;
-                case SDL_KEYDOWN: onKeyDown(&event); break;
-                case SDL_KEYUP:   onKeyUp(&event);   break;
+                case SDL_QUIT:
+                    m_running = false;
+                    break;
+                case SDL_KEYDOWN:
+                    onKeyDown(event);
+                    break;
+                case SDL_KEYUP:
+                    onKeyUp(event);
+                    break;
                 case SDL_MOUSEBUTTONDOWN:
                 case SDL_MOUSEBUTTONUP:
                 case SDL_MOUSEMOTION:
@@ -169,15 +169,15 @@ void Game::update() {
     }
 }
 
-void Game::onKeyDown(SDL_Event* evt) {
-    m_keys[ evt->key.keysym.sym ] = 1;
+void Game::onKeyDown(const SDL_Event& event) {
+    m_keys[event.key.keysym.sym] = 1;
 }
 
-void Game::onKeyUp(SDL_Event* evt) {
-    m_keys[ evt->key.keysym.sym ] = 0;
+void Game::onKeyUp(const SDL_Event& event) {
+    m_keys[event.key.keysym.sym] = 0;
 }
 
-int main(int argc, char** argv){
+int main(){
     Game game;
     game.start();
     return 0;
