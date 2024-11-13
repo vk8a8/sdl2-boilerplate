@@ -25,11 +25,10 @@ enum {
     HERO_SPEED = 2
 };
 
-class Sprite {
-public:
-    int x, y;
-    Sprite() :x(0), y(0) {}
-};
+typedef struct {
+    int x = 0;
+    int y = 0;
+} Sprite;
 
 class Game {
 public:
@@ -46,20 +45,20 @@ public:
     void run();
     void update();
 private:
-    std::map<int,int> keys; // No SDLK_LAST. SDL2 migration guide suggests std::map
-    int frameSkip;
-    int running;
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    Sprite hero;
+    std::map<int,int> m_keys; // No SDLK_LAST. SDL2 migration guide suggests std::map
+    int m_frameSkip;
+    bool m_running;
+    SDL_Window* m_window;
+    SDL_Renderer* m_renderer;
+    Sprite m_hero;
 };
 
 Game::Game()
-:frameSkip(0), running(0), window(NULL), renderer(NULL) {
+:m_frameSkip(0), m_running(false), m_window(NULL), m_renderer(NULL) {
 }
 
 Game::~Game() {
-    this->stop();
+    stop();
 }
 
 void Game::start() {
@@ -67,10 +66,10 @@ void Game::start() {
     if (SDL_Init(SDL_INIT_EVERYTHING)) {
         return;
     }
-    if (SDL_CreateWindowAndRenderer(DISPLAY_WIDTH, DISPLAY_HEIGHT, flags, &window, &renderer)) {
+    if (SDL_CreateWindowAndRenderer(DISPLAY_WIDTH, DISPLAY_HEIGHT, flags, &m_window, &m_renderer)) {
         return;
     }
-    this->running = 1;
+    m_running = true;
     run();
 }
 
@@ -78,44 +77,44 @@ void Game::draw() {
     SDL_Rect heroRect;
     
     // Clear screen
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(m_renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+    SDL_RenderClear(m_renderer);
     
     // Render hero
-    heroRect.x = hero.x;
-    heroRect.y = hero.y;
+    heroRect.x = m_hero.x;
+    heroRect.y = m_hero.y;
     heroRect.w = 20;
     heroRect.h = 20;
     fillRect(&heroRect, 255, 0, 0);
     
-    SDL_RenderPresent(renderer);
+    SDL_RenderPresent(m_renderer);
 }
 
 void Game::stop() {
-    if (NULL != renderer) {
-        SDL_DestroyRenderer(renderer);
-        renderer = NULL;
+    if (NULL != m_renderer) {
+        SDL_DestroyRenderer(m_renderer);
+        m_renderer = NULL;
     }
-    if (NULL != window) {
-        SDL_DestroyWindow(window);
-        window = NULL;
+    if (NULL != m_window) {
+        SDL_DestroyWindow(m_window);
+        m_window = NULL;
     }
     SDL_Quit();
 }
 
 void Game::fillRect(SDL_Rect* rc, int r, int g, int b) {
-    SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(renderer, rc);
+    SDL_SetRenderDrawColor(m_renderer, r, g, b, SDL_ALPHA_OPAQUE);
+    SDL_RenderFillRect(m_renderer, rc);
 }
 
 void Game::fpsChanged(int fps) {
     char szFps[ 128 ];
     sprintf(szFps, "%s: %d FPS", "SDL2 Base C++ - Use Arrow Keys to Move", fps);
-    SDL_SetWindowTitle(window, szFps);
+    SDL_SetWindowTitle(m_window, szFps);
 }
 
 void Game::onQuit() {
-    running = 0;
+    m_running = false;
 }
 
 void Game::run() {
@@ -123,7 +122,7 @@ void Game::run() {
     int now = past, pastFps = past;
     int fps = 0, framesSkipped = 0;
     SDL_Event event;
-    while (running) {
+    while (m_running) {
         int timeElapsed = 0;
         if (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -141,7 +140,7 @@ void Game::run() {
         if (timeElapsed >= UPDATE_INTERVAL ) {
             past = now;
             update();
-            if (framesSkipped++ >= frameSkip) {
+            if (framesSkipped++ >= m_frameSkip) {
                 draw();
                 ++fps;
                 framesSkipped = 0;
@@ -159,23 +158,23 @@ void Game::run() {
 }
 
 void Game::update() {
-    if (keys[SDLK_LEFT]) {
-        hero.x -= HERO_SPEED;
-    } else if (keys[SDLK_RIGHT]) {
-        hero.x += HERO_SPEED;
-    } else if (keys[SDLK_UP]) {
-        hero.y -= HERO_SPEED;
-    } else if (keys[SDLK_DOWN]) {
-        hero.y += HERO_SPEED;
+    if (m_keys[SDLK_LEFT]) {
+        m_hero.x -= HERO_SPEED;
+    } else if (m_keys[SDLK_RIGHT]) {
+        m_hero.x += HERO_SPEED;
+    } else if (m_keys[SDLK_UP]) {
+        m_hero.y -= HERO_SPEED;
+    } else if (m_keys[SDLK_DOWN]) {
+        m_hero.y += HERO_SPEED;
     }
 }
 
 void Game::onKeyDown(SDL_Event* evt) {
-    keys[ evt->key.keysym.sym ] = 1;
+    m_keys[ evt->key.keysym.sym ] = 1;
 }
 
 void Game::onKeyUp(SDL_Event* evt) {
-    keys[ evt->key.keysym.sym ] = 0;
+    m_keys[ evt->key.keysym.sym ] = 0;
 }
 
 int main(int argc, char** argv){
